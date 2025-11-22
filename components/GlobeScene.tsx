@@ -16,9 +16,15 @@ const providerColor: Record<CloudProvider, string> = {
 };
 
 function latencyColor(ms: number) {
-    if (ms < 50) return "#22c55e";
-    if (ms < 120) return "#eab308";
-    return "#ef4444";
+    if (ms < 50) return "#22c55e"; // low
+    if (ms < 120) return "#eab308"; // medium
+    return "#ef4444"; // high
+}
+
+function latencyLabel(ms: number) {
+    if (ms < 50) return "Low";
+    if (ms < 120) return "Medium";
+    return "High";
 }
 
 type Props = {
@@ -36,19 +42,17 @@ export function GlobeScene({
 }: Props) {
     const globeRef = useRef<GlobeMethods | undefined>();
     const containerRef = useRef<HTMLDivElement | null>(null);
-
     const { links } = useLatency();
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-    // Measure container and keep globe width/height in sync
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const [hoveredLink, setHoveredLink] = useState<LatencyLink | null>(null);
+
+    // measure container for proper canvas size
     useEffect(() => {
         const handleResize = () => {
             if (!containerRef.current) return;
             const rect = containerRef.current.getBoundingClientRect();
-            setDimensions({
-                width: rect.width,
-                height: rect.height,
-            });
+            setDimensions({ width: rect.width, height: rect.height });
         };
 
         handleResize();
@@ -56,11 +60,11 @@ export function GlobeScene({
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    // Initial camera POV
+    // initial camera
     useEffect(() => {
         if (!globeRef.current) return;
         globeRef.current.pointOfView({ lat: 20, lng: 0, altitude: 2.8 }, 1000);
-    }, [dimensions.width, dimensions.height]); // rerun once we know size
+    }, [dimensions.width, dimensions.height]);
 
     const filteredExchanges = useMemo(
         () => exchanges.filter((ex) => activeProviders.includes(ex.provider)),
@@ -75,12 +79,37 @@ export function GlobeScene({
         [activeProviders]
     );
 
+    // only keep links for active providers and within latency slider
     const filteredLinks: LatencyLink[] = useMemo(
         () =>
-            links.filter(
-                (l) => l.latencyMs <= maxLatency && showRealTime
-            ),
-        [links, maxLatency, showRealTime]
+            links.filter((l) => {
+                if (l.latencyMs > maxLatency || !showRealTime) return false;
+                const fromExchange = exchanges.find((ex) => ex.id === l.fromId);
+                if (!fromExchange) return false;
+                return activeProviders.includes(fromExchange.provider);
+            }),
+        [links, maxLatency, showRealTime, activeProviders]
+    );
+
+    // Pulse effect: rings at the "from" exchange locations,
+    // speed slightly slower for high latency so it "feels" sluggish.
+    const ringData = useMemo(
+        () =>
+            filteredLinks.map((l) => {
+                const ex = exchanges.find((e) => e.id === l.fromId)!;
+                const baseSpeed = 0.8; // lower = slower propagation
+                const speed =
+                    l.latencyMs < 50 ? baseSpeed * 1.6 : l.latencyMs < 120 ? baseSpeed : baseSpeed * 0.6;
+
+                return {
+                    ...l,
+                    lat: ex.lat,
+                    lng: ex.lng,
+                    propagationSpeed: speed,
+                    maxRadius: 3.5,
+                };
+            }),
+        [filteredLinks]
     );
 
     const ready = dimensions.width > 0 && dimensions.height > 0;
@@ -101,6 +130,7 @@ export function GlobeScene({
                     showAtmosphere
                     atmosphereColor="lightskyblue"
                     atmosphereAltitude={0.25}
+                    // exchange points
                     pointsData={filteredExchanges}
                     pointLat="lat"
                     pointLng="lng"
@@ -110,26 +140,35 @@ export function GlobeScene({
                     pointLabel={(d: any) =>
                         `${d.name} (${d.city})\n${d.provider} - ${d.regionCode}`
                     }
+                    // animated latency arcs (data streams)
                     arcsData={filteredLinks}
                     arcStartLat="fromLat"
                     arcStartLng="fromLng"
                     arcEndLat="toLat"
                     arcEndLng="toLng"
+                    arcAltitude={0.2}
+                    arcStroke={0.5}
                     arcColor={(d: any) => [
                         latencyColor(d.latencyMs),
                         latencyColor(d.latencyMs),
                     ]}
-                    arcStroke={0.5}
-                    arcDashLength={0.4}
+                    // makes it look like moving packets
+                    arcDashLength={0.3}
                     arcDashGap={0.7}
-                    arcDashAnimateTime={4000}
+                    arcDashAnimateTime={3000}
+                    onArcHover={(arc: any) => setHoveredLink(arc ?? null)}
+                    // pulsing rings from each exchange
+                    ringsData={ringData}
+                    ringLat="lat"
+                    ringLng="lng"
+                    ringColor={(d: any) => latencyColor(d.latencyMs)}
+                    ringMaxRadius={(d: any) => d.maxRadius}
+                    ringPropagationSpeed={(d: any) => d.propagationSpeed}
+                    ringRepeatPeriod={2000}
                 />
             )}
 
-            {/* Region markers could be added via custom objects; for now they’re still
-          represented via exchange mapping + legend. */}
-
-            {/* Legend */}
+            {/* Legend (unchanged, just ensure it's small on mobile) */}
             <div className="absolute left-2 top-2 max-w-[70vw] space-y-1 rounded-xl bg-slate-900/80 p-2 text-[10px] text-slate-100 shadow-lg backdrop-blur sm:left-4 sm:top-4 sm:max-w-xs sm:p-3 sm:text-xs">
                 <div className="font-semibold">Legend</div>
                 <div className="flex items-center gap-2">
@@ -157,6 +196,25 @@ export function GlobeScene({
                     Link colors: green (&lt;50ms), yellow (&lt;120ms), red (slow)
                 </div>
             </div>
+
+            {/* Hover pill with real-time latency value */}
+            {hoveredLink && (
+                <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full bg-slate-900/90 px-4 py-2 text-[11px] text-slate-100 shadow-xl backdrop-blur">
+                    <span className="font-mono">
+                        {hoveredLink.latencyMs} ms
+                    </span>
+                    <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ background: latencyColor(hoveredLink.latencyMs) }}
+                    />
+                    <span className="uppercase tracking-wide text-slate-300">
+                        {latencyLabel(hoveredLink.latencyMs)} latency
+                    </span>
+                    <span className="text-slate-400">
+                        (updated&nbsp;{new Date(hoveredLink.lastUpdated).toLocaleTimeString()})
+                    </span>
+                </div>
+            )}
         </div>
     );
 }
