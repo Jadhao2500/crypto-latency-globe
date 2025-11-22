@@ -1,7 +1,7 @@
 // components/LatencyChart.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useLatency } from "@/context/LatencyContext";
 import type { LatencySample } from "@/types/latency";
@@ -22,7 +22,13 @@ export function LatencyChart({ pairId }: Props) {
     const { history } = useLatency();
     const [range, setRange] = useState<TimeRange>("1h");
 
-    const now = Date.now();
+    const [now, setNow] = useState(() => Date.now());
+
+    // Update 'now' every second to keep the chart window moving
+    useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const filtered: LatencySample[] = useMemo(() => {
         const cutoff = now - rangeToMs[range];
@@ -49,7 +55,11 @@ export function LatencyChart({ pairId }: Props) {
     }, [filtered]);
 
     return (
-        <div className="flex h-full flex-col rounded-xl bg-slate-900/80 p-4 text-xs text-slate-200 shadow-xl backdrop-blur">
+        <div className="flex flex-col gap-3 p-4 rounded-xl 
+       bg-background
+       text-foreground
+       border border-slate-200 dark:border-slate-800
+       shadow-md dark:shadow-lg transition-colors duration-300">
             <div className="mb-2 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Historical Latency</h2>
                 <div className="flex gap-1">
@@ -57,8 +67,16 @@ export function LatencyChart({ pairId }: Props) {
                         <button
                             key={r}
                             onClick={() => setRange(r)}
-                            className={`rounded-full px-2 py-1 text-[11px] ${r === range ? "bg-sky-500 text-white" : "bg-slate-800"
-                                }`}
+                            className={`
+    text-xs px-3 py-1 rounded-full border transition-colors duration-200
+    ${r === range
+                                    ? // Active state (theme-aware)
+                                    "bg-sky-500 text-white border-sky-500 dark:bg-sky-400 dark:text-black dark:border-sky-400"
+                                    : // Idle state (theme-aware)
+                                    "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 \
+           dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700"
+                                }
+  `}
                         >
                             {r}
                         </button>
@@ -78,9 +96,13 @@ export function LatencyChart({ pairId }: Props) {
                             tick={{ fontSize: 10 }}
                             tickFormatter={(v) => `${v}ms`}
                         />
-                        <Tooltip
+                        {/* <Tooltip
                             labelStyle={{ fontSize: 11 }}
                             formatter={(value) => [`${value} ms`, "Latency"]}
+                        /> */}
+                        <Tooltip
+                            contentStyle={{ background: "var(--background)", color: "var(--foreground)", borderRadius: "6px" }}
+                            labelStyle={{ color: "var(--foreground)" }}
                         />
                         <Line
                             type="monotone"

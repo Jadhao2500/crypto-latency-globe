@@ -59,8 +59,14 @@ export function ControlPanel(props: Props) {
     };
 
     return (
-        <div className="flex h-full flex-col gap-4 rounded-xl bg-slate-900/80 p-4 text-sm shadow-xl backdrop-blur">
-            <h2 className="text-base font-semibold text-slate-100">
+        // <div className="flex h-full flex-col gap-4 rounded-xl bg-slate-900/80 p-4 text-sm shadow-xl backdrop-blur">
+        <div className="flex h-full flex-col gap-4 p-4 rounded-xl
+  bg-background
+  border border-slate-200 dark:border-slate-800
+  text-foreground
+  shadow-md dark:shadow-lg
+  transition-colors duration-300">
+            <h2 className="text-base font-semibold text-foreground">
                 Controls
             </h2>
 
@@ -74,10 +80,17 @@ export function ControlPanel(props: Props) {
                         <button
                             key={p}
                             onClick={() => toggleProvider(p)}
-                            className={`rounded-full px-3 py-1 text-xs ${activeProviders.includes(p)
-                                    ? "bg-sky-500 text-slate-50"
-                                    : "bg-slate-800 text-slate-300"
-                                }`}
+
+                            className={`
+    text-xs px-3 py-1 rounded-full border transition-colors duration-200
+    ${activeProviders.includes(p)
+                                    ? // Active state (theme-aware)
+                                    "bg-sky-500 text-white border-sky-500 dark:bg-sky-400 dark:text-black dark:border-sky-400"
+                                    : // Idle state (theme-aware)
+                                    "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 \
+           dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700"
+                                }
+  `}
                         >
                             {providerLabels[p]}
                         </button>
@@ -142,8 +155,8 @@ export function ControlPanel(props: Props) {
                                 )
                             }
                             className={`flex w-full justify-between rounded-md px-2 py-1 text-left ${selectedExchangeId === ex.id
-                                    ? "bg-sky-600 text-slate-50"
-                                    : "bg-slate-800 text-slate-200"
+                                ? "bg-sky-600 text-slate-50"
+                                : "bg-slate-800 text-slate-200"
                                 }`}
                         >
                             <span>{ex.name}</span>

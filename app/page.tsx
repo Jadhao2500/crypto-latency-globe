@@ -25,13 +25,13 @@ export default function HomePage() {
     <LatencyProvider>
       <main className="flex min-h-screen flex-col gap-4 p-4 md:p-6">
         {/* Top bar */}
-        <header className="flex items-center justify-between">
+        <header className="flex flex-col gap-3 sm:flex-row justify-between items-start sm:items-center p-2 rounded-xl
+  bg-background border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-md transition-colors">
+
           <div>
-            <h1 className="text-lg font-semibold md:text-2xl">
-              Crypto Latency Globe
-            </h1>
-            <p className="text-xs text-slate-500 md:text-sm dark:text-slate-400">
-              3D world map of exchange servers, cloud regions & real-time latency.
+            <h1 className="text-xl font-semibold">Crypto Latency Globe</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Real-time cloud + exchange latency visualization
             </p>
           </div>
 
@@ -68,16 +68,15 @@ export default function HomePage() {
           {/* Globe */}
           <div
             className="
-    
+    order-1 lg:order-2
     rounded-2xl
-    bg-slate-100
-    p-2
-    shadow-2xl
-    dark:bg-slate-900/70
-    overflow-hidden       
+    overflow-hidden
+    border border-slate-200 dark:border-slate-800
+   bg-background shadow-md dark:shadow-lg
+    transition-colors duration-300
   "
           >
-            <div className="h-full w-full">
+            <div className="h-[260px] sm:h-[320px] md:h-[420px] lg:h-full">
               <GlobeScene
                 activeProviders={activeProviders}
                 maxLatency={maxLatency}

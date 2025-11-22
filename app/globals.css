@@ -1,10 +1,21 @@
 @import "tailwindcss";
 
+/* 1️⃣ Tell Tailwind how to detect dark mode */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* 2️⃣ Light theme defaults */
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
+/* 3️⃣ Dark theme overrides when data-theme="dark" */
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+/* 4️⃣ Map your variables into Tailwind theme tokens */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -12,15 +23,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* 5️⃣ Base body styles driven by CSS vars */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+* {
+  transition: background-color 250ms, color 250ms, border-color 250ms;
 }

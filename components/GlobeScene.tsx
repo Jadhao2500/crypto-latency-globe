@@ -168,8 +168,12 @@ export function GlobeScene({
                 />
             )}
 
-            {/* Legend (unchanged, just ensure it's small on mobile) */}
-            <div className="absolute left-2 top-2 max-w-[70vw] space-y-1 rounded-xl bg-slate-900/80 p-2 text-[10px] text-slate-100 shadow-lg backdrop-blur sm:left-4 sm:top-4 sm:max-w-xs sm:p-3 sm:text-xs">
+            {/* Legend */}
+            <div className="absolute left-2 top-2 sm:left-4 sm:top-4
+  bg-(--background)/85 backdrop-blur-md
+  border border-slate-200 dark:border-slate-800
+  rounded-lg px-3 py-2 shadow-md dark:shadow-lg
+  text-[10px] sm:text-xs transition-colors">
                 <div className="font-semibold">Legend</div>
                 <div className="flex items-center gap-2">
                     <span
