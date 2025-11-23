@@ -15,4 +15,6 @@ export type LatencySample = {
     timestamp: string; // ISO
     pairId: string;
     latencyMs: number;
+    fromId: string;
+    toId: string;
 };

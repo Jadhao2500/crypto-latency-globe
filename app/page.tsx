@@ -7,6 +7,7 @@ import { ControlPanel } from "@/components/ControlPanel";
 import { LatencyChart } from "@/components/LatencyChart";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import type { CloudProvider } from "@/data/exchanges";
+import { exchanges } from "@/data/exchanges";
 
 export default function HomePage() {
   const [activeProviders, setActiveProviders] = useState<CloudProvider[]>([
@@ -20,6 +21,10 @@ export default function HomePage() {
   const [selectedExchangeId, setSelectedExchangeId] = useState<string | null>(
     null
   );
+
+  const selectedExchange = exchanges.find(
+    (ex) => ex.id === selectedExchangeId
+  ) || null;
 
   return (
     <LatencyProvider>
@@ -61,8 +66,16 @@ export default function HomePage() {
               setShowRealTime={setShowRealTime}
               selectedExchangeId={selectedExchangeId}
               setSelectedExchangeId={setSelectedExchangeId}
+
             />
-            <LatencyChart />
+            <LatencyChart
+              selectedExchangeId={selectedExchangeId}
+              selectedExchangeLabel={
+                selectedExchange
+                  ? `${selectedExchange.name} – ${selectedExchange.city}`
+                  : undefined
+              }
+            />
           </div>
 
           {/* Globe */}
@@ -82,6 +95,7 @@ export default function HomePage() {
                 maxLatency={maxLatency}
                 showRegions={showRegions}
                 showRealTime={showRealTime}
+                selectedExchangeId={selectedExchangeId}
               />
             </div>
           </div>

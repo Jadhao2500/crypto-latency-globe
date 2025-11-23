@@ -42,6 +42,8 @@ export const LatencyProvider: React.FC<{ children: React.ReactNode }> = ({
                 const samples: LatencySample[] = newLinks.map((l) => ({
                     timestamp: l.lastUpdated,
                     pairId: l.id,
+                    fromId: l.fromId,
+                    toId: l.toId,
                     latencyMs: l.latencyMs,
                 }));
 

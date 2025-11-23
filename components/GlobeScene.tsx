@@ -32,6 +32,7 @@ type Props = {
     maxLatency: number;
     showRegions: boolean;
     showRealTime: boolean;
+    selectedExchangeId: string | null;
 };
 
 export function GlobeScene({
@@ -39,8 +40,9 @@ export function GlobeScene({
     maxLatency,
     showRegions,
     showRealTime,
+    selectedExchangeId,
 }: Props) {
-    const globeRef = useRef<GlobeMethods | undefined>();
+    const globeRef = useRef<GlobeMethods | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const { links } = useLatency();
 
@@ -66,10 +68,24 @@ export function GlobeScene({
         globeRef.current.pointOfView({ lat: 20, lng: 0, altitude: 2.8 }, 1000);
     }, [dimensions.width, dimensions.height]);
 
+    useEffect(() => {
+        if (!globeRef.current || !selectedExchangeId) return;
+        const ex = exchanges.find((e) => e.id === selectedExchangeId);
+        if (!ex) return;
+
+        globeRef.current.pointOfView(
+            { lat: ex.lat, lng: ex.lng, altitude: 1.5 },
+            1000
+        );
+    }, [selectedExchangeId]);
+
+
     const filteredExchanges = useMemo(
         () => exchanges.filter((ex) => activeProviders.includes(ex.provider)),
         [activeProviders]
     );
+
+
 
     const filteredRegions = useMemo(
         () =>
@@ -83,13 +99,19 @@ export function GlobeScene({
     const filteredLinks: LatencyLink[] = useMemo(
         () =>
             links.filter((l) => {
-                if (l.latencyMs > maxLatency || !showRealTime) return false;
-                const fromExchange = exchanges.find((ex) => ex.id === l.fromId);
-                if (!fromExchange) return false;
-                return activeProviders.includes(fromExchange.provider);
+                if (!showRealTime || l.latencyMs > maxLatency) return false;
+
+                const ex = exchanges.find((e) => e.id === l.fromId);
+                if (!ex) return false;
+                if (!activeProviders.includes(ex.provider)) return false;
+
+                if (selectedExchangeId && l.fromId !== selectedExchangeId) return false;
+
+                return true;
             }),
-        [links, maxLatency, showRealTime, activeProviders]
+        [links, maxLatency, showRealTime, activeProviders, selectedExchangeId]
     );
+
 
     // Pulse effect: rings at the "from" exchange locations,
     // speed slightly slower for high latency so it "feels" sluggish.

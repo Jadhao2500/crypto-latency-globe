@@ -16,9 +16,11 @@ const rangeToMs: Record<TimeRange, number> = {
 
 type Props = {
     pairId?: string; // future: filter by pair; for now we aggregate
+    selectedExchangeId?: string | null;
+    selectedExchangeLabel?: string;
 };
 
-export function LatencyChart({ pairId }: Props) {
+export function LatencyChart({ pairId, selectedExchangeId, selectedExchangeLabel }: Props) {
     const { history } = useLatency();
     const [range, setRange] = useState<TimeRange>("1h");
 
@@ -35,10 +37,10 @@ export function LatencyChart({ pairId }: Props) {
         return history.filter((s) => {
             const t = new Date(s.timestamp).getTime();
             if (t < cutoff) return false;
-            if (pairId && s.pairId !== pairId) return false;
+            if (selectedExchangeId && s.fromId !== selectedExchangeId) return false;
             return true;
         });
-    }, [history, range, now, pairId]);
+    }, [history, range, now, selectedExchangeId]);
 
     const chartData = filtered.map((s) => ({
         time: new Date(s.timestamp).toLocaleTimeString(),
@@ -61,28 +63,35 @@ export function LatencyChart({ pairId }: Props) {
        border border-slate-200 dark:border-slate-800
        shadow-md dark:shadow-lg transition-colors duration-300">
             <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Historical Latency</h2>
+                <div>
+                    <h2 className="text-sm font-semibold text-foreground">
+                        Historical Latency
+                    </h2>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {selectedExchangeId
+                            ? `Focused on ${selectedExchangeLabel ?? "selected exchange"}`
+                            : "All visible exchanges"}
+                    </p>
+                </div>
                 <div className="flex gap-1">
                     {(["1h", "24h", "7d"] as TimeRange[]).map((r) => (
                         <button
                             key={r}
                             onClick={() => setRange(r)}
                             className={`
-    text-xs px-3 py-1 rounded-full border transition-colors duration-200
-    ${r === range
-                                    ? // Active state (theme-aware)
-                                    "bg-sky-500 text-white border-sky-500 dark:bg-sky-400 dark:text-black dark:border-sky-400"
-                                    : // Idle state (theme-aware)
-                                    "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 \
-           dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700"
+          text-xs px-3 py-1 rounded-full border transition-colors duration-200
+          ${r === range
+                                    ? "bg-sky-500 text-white border-sky-500 dark:bg-sky-400 dark:text-black dark:border-sky-400"
+                                    : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700"
                                 }
-  `}
+        `}
                         >
                             {r}
                         </button>
                     ))}
                 </div>
             </div>
+
 
             <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
