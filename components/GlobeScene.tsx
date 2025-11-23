@@ -169,11 +169,18 @@ export function GlobeScene({
             )}
 
             {/* Legend */}
-            <div className="absolute left-2 top-2 sm:left-4 sm:top-4
-  bg-(--background)/85 backdrop-blur-md
-  border border-slate-200 dark:border-slate-800
-  rounded-lg px-3 py-2 shadow-md dark:shadow-lg
-  text-[10px] sm:text-xs transition-colors">
+            <div
+                className="
+        pointer-events-none
+        absolute
+        bottom-2 left-2 max-w-[80%]
+        rounded-lg px-3 py-2 text-[10px] sm:text-xs shadow-md backdrop-blur
+        border border-slate-200 dark:border-slate-800
+        bg-(--background)/85
+        sm:bottom-4 sm:left-4 sm:max-w-xs
+        md:top-2 md:bottom-auto
+      "
+            >
                 <div className="font-semibold">Legend</div>
                 <div className="flex items-center gap-2">
                     <span
@@ -221,4 +228,5 @@ export function GlobeScene({
             )}
         </div>
     );
+
 }
