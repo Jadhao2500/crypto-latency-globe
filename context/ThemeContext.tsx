@@ -33,20 +33,13 @@ function resolveInitialTheme(): Theme {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    // default to light on server
-    const [theme, setThemeState] = useState<Theme>("light");
-
-    useEffect(() => {
-        setThemeState(resolveInitialTheme());
-    }, []);
+    // default to light on server, but resolve correctly on client first render
+    const [theme, setThemeState] = useState<Theme>(() => resolveInitialTheme());
 
     useEffect(() => {
         if (typeof document === "undefined") return;
         const root = document.documentElement;
 
-        // 🔑 This drives BOTH:
-        // - CSS variables (:root[data-theme="dark"])
-        // - Tailwind dark: variant via @custom-variant
         root.dataset.theme = theme;
 
         window.localStorage.setItem(THEME_KEY, theme);

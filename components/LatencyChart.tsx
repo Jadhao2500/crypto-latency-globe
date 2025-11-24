@@ -22,13 +22,11 @@ const rangeToMs: Record<TimeRange, number> = {
 };
 
 type Props = {
-    pairId?: string;
     selectedExchangeId?: string | null;
     selectedExchangeLabel?: string;
 };
 
 export function LatencyChart({
-    pairId,
     selectedExchangeId,
     selectedExchangeLabel,
 }: Props) {
@@ -126,7 +124,7 @@ export function LatencyChart({
     return (
         <div
             className="flex flex-col gap-3 rounded-xl border border-slate-200
-                 bg-[var(--background)] p-4 text-[var(--foreground)]
+                 bg-background p-4 text-foreground
                  shadow-md transition-colors duration-300 dark:border-slate-800 dark:shadow-lg"
         >
             <div className="mb-2 flex items-center justify-between">
@@ -174,7 +172,7 @@ export function LatencyChart({
                         />
                         <Tooltip
                             labelFormatter={(v) => formatTooltipLabel(v as number)}
-                            formatter={(value: any) => [`${value} ms`, "Latency"]}
+                            formatter={(value: string) => [`${value} ms`, "Latency"]}
                             contentStyle={{
                                 background: "var(--background)",
                                 color: "var(--foreground)",

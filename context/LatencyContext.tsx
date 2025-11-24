@@ -69,7 +69,7 @@ export function LatencyProvider({ children }: { children: ReactNode }) {
         };
     }, []);
 
-    // ---- seed synthetic 7d / 24h / 1h history for demo ----
+    // ---- seed synthetic 7d / 24h / 1h history  ----
     useEffect(() => {
         // Only seed once, when we have some real links but almost no history yet
         if (seededDemoHistory) return;
@@ -121,15 +121,19 @@ export function LatencyProvider({ children }: { children: ReactNode }) {
                 new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
 
-        setHistory((prev) => {
-            const merged = [...synthetic, ...prev]; // synthetic first, then real
-            if (merged.length > HISTORY_LIMIT) {
-                return merged.slice(merged.length - HISTORY_LIMIT);
-            }
-            return merged;
-        });
+        const timerId = setTimeout(() => {
+            setHistory((prev) => {
+                const merged = [...synthetic, ...prev]; // synthetic first, then real
+                if (merged.length > HISTORY_LIMIT) {
+                    return merged.slice(merged.length - HISTORY_LIMIT);
+                }
+                return merged;
+            });
 
-        setSeededDemoHistory(true);
+            setSeededDemoHistory(true);
+        }, 0);
+
+        return () => clearTimeout(timerId);
     }, [links, history.length, seededDemoHistory]);
 
     return (

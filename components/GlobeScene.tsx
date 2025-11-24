@@ -1,13 +1,12 @@
 // components/GlobeScene.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Globe, { GlobeMethods } from "react-globe.gl";
-import { exchanges } from "@/data/exchanges";
-import { cloudRegions } from "@/data/cloudRegions";
 import { useLatency } from "@/context/LatencyContext";
 import type { CloudProvider } from "@/data/exchanges";
+import { exchanges } from "@/data/exchanges";
 import type { LatencyLink } from "@/types/latency";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Globe, { GlobeMethods } from "react-globe.gl";
 
 const providerColor: Record<CloudProvider, string> = {
     AWS: "#22c55e",
@@ -30,7 +29,7 @@ function latencyLabel(ms: number) {
 type Props = {
     activeProviders: CloudProvider[];
     maxLatency: number;
-    showRegions: boolean;
+    showRegions?: boolean;
     showRealTime: boolean;
     selectedExchangeId: string | null;
 };
@@ -38,7 +37,6 @@ type Props = {
 export function GlobeScene({
     activeProviders,
     maxLatency,
-    showRegions,
     showRealTime,
     selectedExchangeId,
 }: Props) {
@@ -85,15 +83,6 @@ export function GlobeScene({
         [activeProviders]
     );
 
-
-
-    const filteredRegions = useMemo(
-        () =>
-            cloudRegions.filter((r) =>
-                activeProviders.includes(r.provider as CloudProvider)
-            ),
-        [activeProviders]
-    );
 
     // only keep links for active providers and within latency slider
     const filteredLinks: LatencyLink[] = useMemo(
@@ -143,7 +132,7 @@ export function GlobeScene({
         >
             {ready && (
                 <Globe
-                    ref={globeRef as any}
+                    ref={globeRef}
                     width={dimensions.width}
                     height={dimensions.height}
                     globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
