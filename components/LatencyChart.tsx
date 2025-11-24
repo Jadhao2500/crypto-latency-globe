@@ -2,7 +2,14 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+} from "recharts";
 import { useLatency } from "@/context/LatencyContext";
 import type { LatencySample } from "@/types/latency";
 
@@ -15,58 +22,116 @@ const rangeToMs: Record<TimeRange, number> = {
 };
 
 type Props = {
-    pairId?: string; // future: filter by pair; for now we aggregate
+    pairId?: string;
     selectedExchangeId?: string | null;
     selectedExchangeLabel?: string;
 };
 
-export function LatencyChart({ pairId, selectedExchangeId, selectedExchangeLabel }: Props) {
+export function LatencyChart({
+    pairId,
+    selectedExchangeId,
+    selectedExchangeLabel,
+}: Props) {
     const { history } = useLatency();
     const [range, setRange] = useState<TimeRange>("1h");
-
     const [now, setNow] = useState(() => Date.now());
 
-    // Update 'now' every second to keep the chart window moving
+    // keep "now" moving so window slides
     useEffect(() => {
-        const interval = setInterval(() => setNow(Date.now()), 1000);
-        return () => clearInterval(interval);
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
     }, []);
 
+    const cutoff = useMemo(
+        () => now - rangeToMs[range],
+        [now, range]
+    );
+
+    // filter samples by time window + selected exchange
     const filtered: LatencySample[] = useMemo(() => {
-        const cutoff = now - rangeToMs[range];
         return history.filter((s) => {
-            const t = new Date(s.timestamp).getTime();
-            if (t < cutoff) return false;
+            const ts = new Date(s.timestamp).getTime();
+            if (ts < cutoff) return false;
             if (selectedExchangeId && s.fromId !== selectedExchangeId) return false;
             return true;
         });
-    }, [history, range, now, selectedExchangeId]);
+    }, [history, cutoff, selectedExchangeId]);
 
-    const chartData = filtered.map((s) => ({
-        time: new Date(s.timestamp).toLocaleTimeString(),
-        latency: s.latencyMs,
-    }));
+    // sorted chart data with numeric timestamp
+    const chartData = useMemo(
+        () =>
+            filtered
+                .slice()
+                .sort(
+                    (a, b) =>
+                        new Date(a.timestamp).getTime() -
+                        new Date(b.timestamp).getTime()
+                )
+                .map((s) => ({
+                    time: new Date(s.timestamp).getTime(), // numeric x
+                    latency: s.latencyMs,
+                })),
+        [filtered]
+    );
 
     const stats = useMemo(() => {
         if (!filtered.length) return null;
-        const values = filtered.map((s) => s.latencyMs);
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        const vals = filtered.map((s) => s.latencyMs);
+        const min = Math.min(...vals);
+        const max = Math.max(...vals);
+        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
         return { min, max, avg: Number(avg.toFixed(1)) };
     }, [filtered]);
 
+    // helpers to format time for axis / tooltip
+    const formatTick = (t: number) => {
+        const d = new Date(t);
+        if (range === "1h") {
+            return d.toLocaleTimeString(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+            });
+        }
+        if (range === "24h") {
+            return d.toLocaleTimeString(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        }
+        // 7d -> show date + time
+        return d.toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
+
+    const formatTooltipLabel = (value: number) => {
+        const d = new Date(value);
+        if (range === "1h") {
+            return d.toLocaleTimeString();
+        }
+        if (range === "24h") {
+            return d.toLocaleString(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+            });
+        }
+        return d.toLocaleString();
+    };
+
     return (
-        <div className="flex flex-col gap-3 p-4 rounded-xl 
-       bg-background
-       text-foreground
-       border border-slate-200 dark:border-slate-800
-       shadow-md dark:shadow-lg transition-colors duration-300">
+        <div
+            className="flex flex-col gap-3 rounded-xl border border-slate-200
+                 bg-[var(--background)] p-4 text-[var(--foreground)]
+                 shadow-md transition-colors duration-300 dark:border-slate-800 dark:shadow-lg"
+        >
             <div className="mb-2 flex items-center justify-between">
                 <div>
-                    <h2 className="text-sm font-semibold text-foreground">
-                        Historical Latency
-                    </h2>
+                    <h2 className="text-sm font-semibold">Historical Latency</h2>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400">
                         {selectedExchangeId
                             ? `Focused on ${selectedExchangeLabel ?? "selected exchange"}`
@@ -79,12 +144,12 @@ export function LatencyChart({ pairId, selectedExchangeId, selectedExchangeLabel
                             key={r}
                             onClick={() => setRange(r)}
                             className={`
-          text-xs px-3 py-1 rounded-full border transition-colors duration-200
-          ${r === range
+                text-xs px-3 py-1 rounded-full border transition-colors duration-200
+                ${r === range
                                     ? "bg-sky-500 text-white border-sky-500 dark:bg-sky-400 dark:text-black dark:border-sky-400"
                                     : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700"
                                 }
-        `}
+              `}
                         >
                             {r}
                         </button>
@@ -92,32 +157,38 @@ export function LatencyChart({ pairId, selectedExchangeId, selectedExchangeLabel
                 </div>
             </div>
 
-
             <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
                         <XAxis
                             dataKey="time"
-                            hide
+                            type="number"
+                            domain={[cutoff, now]}
+                            tickFormatter={formatTick}
+                            tick={{ fontSize: 10 }}
                         />
                         <YAxis
                             domain={["auto", "auto"]}
                             tick={{ fontSize: 10 }}
                             tickFormatter={(v) => `${v}ms`}
                         />
-                        {/* <Tooltip
-                            labelStyle={{ fontSize: 11 }}
-                            formatter={(value) => [`${value} ms`, "Latency"]}
-                        /> */}
                         <Tooltip
-                            contentStyle={{ background: "var(--background)", color: "var(--foreground)", borderRadius: "6px" }}
+                            labelFormatter={(v) => formatTooltipLabel(v as number)}
+                            formatter={(value: any) => [`${value} ms`, "Latency"]}
+                            contentStyle={{
+                                background: "var(--background)",
+                                color: "var(--foreground)",
+                                borderRadius: 6,
+                            }}
                             labelStyle={{ color: "var(--foreground)" }}
                         />
                         <Line
                             type="monotone"
                             dataKey="latency"
-                            dot={false}
                             strokeWidth={2}
+                            isAnimationActive={true}
+                            animationDuration={400}
+                            dot={false}
                         />
                     </LineChart>
                 </ResponsiveContainer>
@@ -127,15 +198,15 @@ export function LatencyChart({ pairId, selectedExchangeId, selectedExchangeLabel
                 <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
                     <div>
                         <div className="text-slate-400">Min</div>
-                        <div className="font-mono text-slate-100">{stats.min} ms</div>
+                        <div className="font-mono">{stats.min} ms</div>
                     </div>
                     <div>
                         <div className="text-slate-400">Avg</div>
-                        <div className="font-mono text-slate-100">{stats.avg} ms</div>
+                        <div className="font-mono">{stats.avg} ms</div>
                     </div>
                     <div>
                         <div className="text-slate-400">Max</div>
-                        <div className="font-mono text-slate-100">{stats.max} ms</div>
+                        <div className="font-mono">{stats.max} ms</div>
                     </div>
                 </div>
             ) : (
