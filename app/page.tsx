@@ -89,7 +89,7 @@ export default function HomePage() {
     transition-colors duration-300
   "
           >
-            <div className="h-[260px] sm:h-[320px] md:h-[420px] lg:h-full">
+            <div className="h-[260px] sm:h-[320px] md:h-full lg:h-full">
               <GlobeScene
                 activeProviders={activeProviders}
                 maxLatency={maxLatency}
