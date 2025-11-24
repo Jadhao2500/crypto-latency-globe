@@ -1,4 +1,3 @@
-// types/latency.ts
 export type LatencyLink = {
     id: string;
     fromId: string;
@@ -8,13 +7,13 @@ export type LatencyLink = {
     toLat: number;
     toLng: number;
     latencyMs: number;
-    lastUpdated: string; // ISO string
+    lastUpdated: string;
 };
 
 export type LatencySample = {
-    timestamp: string; // ISO
+    timestamp: string;
     pairId: string;
-    latencyMs: number;
     fromId: string;
     toId: string;
+    latencyMs: number;
 };
